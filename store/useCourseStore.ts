@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Course, CourseState } from "@/types";
 import api from "@/services/api";
 import { notificationService } from "@/services/notificationService";
+import { cleanUrl } from "@/utils";
 
 export const useCourseStore = create<CourseState>((set, get) => ({
   courses: [],
@@ -29,12 +30,16 @@ export const useCourseStore = create<CourseState>((set, get) => ({
           description: product.description,
           price: product.price,
           category: product.category,
-          image: product.image,
+          image: cleanUrl(
+            product.thumbnail || (product.images && product.images[0]) || "",
+          ),
           instructor: rawInstructors[index]
             ? {
                 id: rawInstructors[index].id,
                 name: rawInstructors[index].name,
-                picture: rawInstructors[index].picture,
+                picture: {
+                  medium: cleanUrl(rawInstructors[index].picture?.medium || ""),
+                },
                 email: rawInstructors[index].email,
               }
             : undefined,
