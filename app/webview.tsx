@@ -149,7 +149,9 @@ export default function WebViewScreen() {
           source={{ 
             html: HTML_CONTENT,
             headers: {
-              'X-Course-Id': JSON.parse(courseData as string).id.toString(),
+              ...(courseData && typeof courseData === 'string' && JSON.parse(courseData as string).id
+                ? { 'X-Course-Id': JSON.parse(courseData as string).id.toString() }
+                : {}),
               'X-App-Platform': 'React-Native-Expo'
             }
           }}

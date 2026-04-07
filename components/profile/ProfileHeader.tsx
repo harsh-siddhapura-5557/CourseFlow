@@ -24,6 +24,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   avatar,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const { updateAvatar } = useAuthStore();
 
   const handlePickImage = async () => {
@@ -47,6 +48,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setIsUploading(true);
+        setImageError(false); // Reset error state for new image
         await updateAvatar(result.assets[0].uri);
         setIsUploading(false);
       }
@@ -63,11 +65,15 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <View className="w-32 h-32 bg-indigo-50 rounded-full items-center justify-center border-4 border-white shadow-2xl overflow-hidden">
           {isUploading ? (
             <ActivityIndicator size="large" color={Colors.primary} />
-          ) : avatar ? (
+          ) : typeof avatar === "string" &&
+            avatar !== "" &&
+            !avatar.includes("via.placeholder.com") &&
+            !imageError ? (
             <Image
               source={{ uri: avatar }}
               className="w-full h-full"
               resizeMode="cover"
+              onError={() => setImageError(true)}
             />
           ) : (
             <View className="bg-indigo-500 w-full h-full items-center justify-center">

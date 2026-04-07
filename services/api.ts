@@ -44,8 +44,13 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         console.log("[API] Attempting token refresh...");
+        // Use a clean axios instance for refresh to avoid interceptor loops
         const refreshResponse = await axios.post(
           `${BASE_URL}/users/refresh-token`,
+          {},
+          {
+            withCredentials: true, // Required if cookies are used for refresh tokens
+          },
         );
         const { accessToken } = refreshResponse.data.data;
 
@@ -55,10 +60,14 @@ api.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         }
         return api(originalRequest);
-      } catch (refreshError) {
-        console.error("[API] Token refresh failed. Clearing session.");
+      } catch (refreshError: any) {
+        if (refreshError.response?.status !== 401) {
+          console.error("[API] Token refresh failed:", refreshError.message);
+        }
+
         await SecureStore.deleteItemAsync("auth_token");
         await SecureStore.deleteItemAsync("user_data");
+
         return Promise.reject(refreshError);
       }
     }

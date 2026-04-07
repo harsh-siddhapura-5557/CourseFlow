@@ -107,12 +107,18 @@ export default function CourseDetailScreen() {
         className="flex-1 bg-[#F8FAFC]"
       >
         <View className="relative">
-          <Image
-            source={{ uri: imageError ? fallbackImage : course.image }}
-            className="w-full h-80 bg-slate-200"
-            resizeMode="cover"
-            onError={() => setImageError(true)}
-          />
+          {course.image && !imageError ? (
+            <Image
+              source={{ uri: course.image }}
+              className="w-full h-80 bg-slate-200"
+              resizeMode="cover"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <View className="w-full h-80 bg-indigo-50 items-center justify-center">
+              <BookOpen size={80} color={Colors.primary} strokeWidth={1} />
+            </View>
+          )}
           <View className="absolute inset-0 bg-black/20" />
 
           <TouchableOpacity

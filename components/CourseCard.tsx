@@ -1,7 +1,7 @@
 import React, { memo, useState } from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import { Course } from "@/types";
-import { Star, Heart, Users } from "lucide-react-native";
+import { Star, Heart, Users, BookOpen, } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { Colors } from "@/constants/Colors";
 
@@ -28,13 +28,22 @@ const CourseCard = ({
       activeOpacity={0.9}
       onPress={() => router.push(`/course/${course.id}`)}
     >
-      <Image
-        source={{ uri: imageError ? fallbackImage : course.image }}
-        style={{ width: "100%", height: 192 }}
-        className="bg-slate-200"
-        resizeMode="cover"
-        onError={() => setImageError(true)}
-      />
+      {course.image && !imageError ? (
+        <Image
+          source={{ uri: course.image }}
+          style={{ width: "100%", height: 192 }}
+          className="bg-slate-200"
+          resizeMode="cover"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <View
+          style={{ width: "100%", height: 192 }}
+          className="bg-indigo-50 items-center justify-center"
+        >
+          <BookOpen size={48} color={Colors.primary} strokeWidth={1.5} />
+        </View>
+      )}
       <TouchableOpacity
         onPress={() => onToggleBookmark(course.id)}
         className="absolute top-2 right-2 bg-white/90 p-2 rounded-full shadow-sm"
@@ -87,4 +96,4 @@ const CourseCard = ({
   );
 };
 
-export default memo(CourseCard);
+export default CourseCard;

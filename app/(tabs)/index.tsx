@@ -41,7 +41,7 @@ export default function CoursesScreen() {
         course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         course.description.toLowerCase().includes(searchQuery.toLowerCase()),
     );
-  }, [courses, searchQuery]);
+  }, [courses, searchQuery, bookmarks]);
 
   const renderItem = useCallback(
     ({ item }: { item: any }) => (
@@ -100,6 +100,7 @@ export default function CoursesScreen() {
         data={filteredCourses}
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
+        extraData={bookmarks}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
         recycleItems={true}

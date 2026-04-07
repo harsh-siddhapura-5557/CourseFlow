@@ -92,7 +92,7 @@ export const useCourseStore = create<CourseState>((set, get) => ({
     const newEnrolled = [...enrolled, id];
     await AsyncStorage.setItem("enrolled", JSON.stringify(newEnrolled));
     set({ enrolled: newEnrolled });
-    
+
     // Track activity on enrollment
     await notificationService.trackActivity();
   },
