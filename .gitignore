@@ -1,0 +1,61 @@
+# Node
+node_modules/
+.npm/
+.yarn/
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# TypeScript
+*.tsbuildinfo
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# IDE
+.idea/
+
+# Misc
+*.apk
+*.ipa
+*.xcdatamodeld/
+*.xcworkspace/
+*.xcodeproj/
+*.mobileprovision
+*.p12
+*.key
+*.csr
+*.cert
+*.jks
+*.keystore
+*.orig
+*.pyc
+*.swp
+*.bak
+*.swo
+*.tgz
+*.zip
+.cache/
+.temp/
+temp/
+coverage/
+build/
