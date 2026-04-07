@@ -59,10 +59,15 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1"
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-6">
+        <ScrollView 
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} 
+          className="p-6"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <View className="flex-1 justify-center">
             <View className="mb-10">
               <Text className="text-4xl font-bold text-slate-900 mb-2">

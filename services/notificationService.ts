@@ -7,12 +7,15 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
 export const notificationService = {
   requestPermissions: async () => {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     if (existingStatus !== "granted") {
       const { status } = await Notifications.requestPermissionsAsync();
@@ -33,46 +36,55 @@ export const notificationService = {
   },
 
   scheduleBookmarkMilestone: async (count: number) => {
-    if (count >= 5) {
-      // Check if we already sent the 5+ milestone notification to avoid spamming
-      const milestoneSent = await AsyncStorage.getItem("milestone_5_sent");
-      if (milestoneSent === "true") return;
+    try {
+      if (count >= 5) {
+        // Check if we already sent the 5+ milestone notification to avoid spamming
+        const milestoneSent = await AsyncStorage.getItem("milestone_5_sent");
+        if (milestoneSent === "true") return;
 
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Course Enthusiast! 🌟",
-          body: `Wow! You've bookmarked ${count} courses. Ready to start your learning journey?`,
-          data: { type: "bookmark_milestone" },
-          sound: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-        },
-        trigger: null, // Send immediately
-      });
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: "Course Enthusiast! 🌟",
+            body: `Wow! You've bookmarked ${count} courses. Ready to start your learning journey?`,
+            data: { type: "bookmark_milestone" },
+            sound: true,
+            priority: Notifications.AndroidNotificationPriority.HIGH,
+          },
+          trigger: null, // Send immediately
+        });
 
-      await AsyncStorage.setItem("milestone_5_sent", "true");
+        await AsyncStorage.setItem("milestone_5_sent", "true");
+      }
+    } catch (error) {
+      console.error("Failed to schedule milestone notification:", error);
     }
   },
 
   scheduleInactivityReminder: async () => {
-    // Clear existing inactivity notifications
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    
-    // Schedule new reminder for 24 hours later
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "We miss you! 📚",
-        body: "Come back and continue your courses. Don't let your progress stop!",
-        data: { type: "inactivity_reminder" },
-      },
-      trigger: {
-        seconds: 24 * 60 * 60, // 24 hours
-        repeats: false,
-      },
-    });
+    try {
+      // Clear existing inactivity notifications
+      await Notifications.cancelAllScheduledNotificationsAsync();
+
+      // Schedule new reminder for 24 hours later
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "We miss you! 📚",
+          body: "Come back and continue your courses. Don't let your progress stop!",
+          data: { type: "inactivity_reminder" },
+        },
+        trigger: {
+          seconds: 24 * 60 * 60, // 24 hours
+          repeats: false,
+          type: "timeInterval",
+        } as Notifications.TimeIntervalTriggerInput,
+      });
+    } catch (error) {
+      console.error("Failed to schedule inactivity reminder:", error);
+    }
   },
 
   trackActivity: async () => {
     await AsyncStorage.setItem("last_activity", new Date().toISOString());
     await notificationService.scheduleInactivityReminder();
-  }
+  },
 };
