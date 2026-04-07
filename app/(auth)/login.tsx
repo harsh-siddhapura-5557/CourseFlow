@@ -18,7 +18,9 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      await authService.login(email, password);
+      // FreeAPI login can take email OR username
+      // We'll pass it as 'email' but it can be username too
+      await authService.login(email.toLowerCase().trim(), password);
       router.replace("/(tabs)");
     } catch (error: any) {
       Alert.alert("Login Failed", error.message);
