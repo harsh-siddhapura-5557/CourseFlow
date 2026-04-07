@@ -1,8 +1,9 @@
-import React, { memo } from "react";
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import React, { memo, useState } from "react";
+import { View, Text, TouchableOpacity, Image } from "react-native";
 import { Course } from "@/types";
-import { Heart } from "lucide-react-native";
+import { Star, Heart, Users } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { Colors } from "@/constants/Colors";
 
 interface CourseCardProps {
   course: Course;
@@ -10,8 +11,16 @@ interface CourseCardProps {
   onToggleBookmark: (id: number) => void;
 }
 
-const CourseCard = ({ course, isBookmarked, onToggleBookmark }: CourseCardProps) => {
+const CourseCard = ({
+  course,
+  isBookmarked,
+  onToggleBookmark,
+}: CourseCardProps) => {
   const router = useRouter();
+  const [imageError, setImageError] = useState(false);
+
+  const fallbackImage =
+    "https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?w=800&q=80";
 
   return (
     <TouchableOpacity
@@ -20,43 +29,58 @@ const CourseCard = ({ course, isBookmarked, onToggleBookmark }: CourseCardProps)
       onPress={() => router.push(`/course/${course.id}`)}
     >
       <Image
-        source={{ uri: course.image }}
-        className="w-full h-48 bg-slate-200"
+        source={{ uri: imageError ? fallbackImage : course.image }}
+        style={{ width: "100%", height: 192 }}
+        className="bg-slate-200"
         resizeMode="cover"
+        onError={() => setImageError(true)}
       />
+      <TouchableOpacity
+        onPress={() => onToggleBookmark(course.id)}
+        className="absolute top-2 right-2 bg-white/90 p-2 rounded-full shadow-sm"
+      >
+        <Heart
+          size={18}
+          color={isBookmarked ? Colors.error : Colors.secondary}
+          fill={isBookmarked ? Colors.error : "transparent"}
+        />
+      </TouchableOpacity>
+
       <View className="p-4">
         <View className="flex-row items-center mb-2">
-          {course.instructor?.picture?.medium && (
-            <Image
-              source={{ uri: course.instructor.picture.medium }}
-              className="w-6 h-6 rounded-full mr-2"
-            />
-          )}
-          <Text className="text-muted text-xs font-medium">
-            {course.instructor ? `${course.instructor.name.first} ${course.instructor.name.last}` : "Unknown Instructor"}
-          </Text>
+          <View className="bg-indigo-50 px-2 py-1 rounded-md">
+            <Text className="text-[#6366f1] text-[10px] font-bold uppercase">
+              {course.category}
+            </Text>
+          </View>
+          <View className="flex-row items-center ml-auto">
+            <Star size={12} color={Colors.warning} fill={Colors.warning} />
+            <Text className="text-slate-900 font-bold ml-1 text-xs">
+              {course.rating || "4.8"}
+            </Text>
+          </View>
         </View>
 
-        <Text className="text-text text-lg font-bold mb-1" numberOfLines={2}>
+        <Text
+          className="text-lg font-bold text-slate-900 mb-1"
+          numberOfLines={1}
+        >
           {course.title}
         </Text>
-        
-        <Text className="text-muted text-sm mb-3" numberOfLines={2}>
+        <Text className="text-slate-500 text-xs mb-3" numberOfLines={2}>
           {course.description}
         </Text>
 
         <View className="flex-row items-center justify-between mt-auto">
-          <Text className="text-primary font-bold text-lg">${course.price}</Text>
-          <TouchableOpacity
-            className={`p-2 rounded-full ${isBookmarked ? 'bg-red-50' : 'bg-slate-50'}`}
-            onPress={() => onToggleBookmark(course.id)}
-          >
-            <Heart
-              size={20}
-              color={isBookmarked ? "#ef4444" : "#94a3b8"}
-              fill={isBookmarked ? "#ef4444" : "transparent"}
-            />
-          </TouchableOpacity>
+          <Text className="text-[#6366f1] text-lg font-black">
+            ${course.price}
+          </Text>
+          <View className="flex-row items-center">
+            <Users size={14} color={Colors.secondary} />
+            <Text className="text-slate-400 text-[10px] font-bold ml-1">
+              {course.students || "1.2k"}
+            </Text>
+          </View>
         </View>
       </View>
     </TouchableOpacity>

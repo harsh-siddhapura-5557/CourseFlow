@@ -1,51 +1,87 @@
-import axios from "axios";
+import axios, {
+  InternalAxiosRequestConfig,
+  AxiosResponse,
+  AxiosError,
+} from "axios";
 import * as SecureStore from "expo-secure-store";
 
 const BASE_URL = "https://api.freeapi.app/api/v1";
 
+interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+  retryCount?: number;
+}
+
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 10000,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
-
-// Simple retry mechanism
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
 api.interceptors.request.use(
-  async (config) => {
+  async (config: InternalAxiosRequestConfig) => {
     const token = await SecureStore.getItemAsync("auth_token");
-    if (token) {
+    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const config = error.config;
-    
-    // Retry logic
-    if (!config || !config.retry) {
-        config.retry = 0;
-    }
+  (response: AxiosResponse) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as ExtendedAxiosRequestConfig;
 
-    if (config.retry < MAX_RETRIES && (error.code === 'ECONNABORTED' || error.response?.status >= 500)) {
-        config.retry += 1;
-        const delay = new Promise((resolve) => setTimeout(resolve, RETRY_DELAY * config.retry));
-        return delay.then(() => api(config));
-    }
+    if (!originalRequest) return Promise.reject(error);
 
-    const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      // Handle unauthorized (e.g., logout)
+      try {
+        console.log("[API] Attempting token refresh...");
+        const refreshResponse = await axios.post(
+          `${BASE_URL}/users/refresh-token`,
+        );
+        const { accessToken } = refreshResponse.data.data;
+
+        await SecureStore.setItemAsync("auth_token", accessToken);
+
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        }
+        return api(originalRequest);
+      } catch (refreshError) {
+        console.error("[API] Token refresh failed. Clearing session.");
+        await SecureStore.deleteItemAsync("auth_token");
+        await SecureStore.deleteItemAsync("user_data");
+        return Promise.reject(refreshError);
+      }
     }
+
+    const shouldRetry =
+      (error.code === "ECONNABORTED" ||
+        (error.response?.status && error.response.status >= 500)) &&
+      (originalRequest.retryCount || 0) < MAX_RETRIES;
+
+    if (shouldRetry) {
+      originalRequest.retryCount = (originalRequest.retryCount || 0) + 1;
+      const backoffDelay = RETRY_DELAY * originalRequest.retryCount;
+
+      console.warn(
+        `[API] Request failed (${error.code || error.response?.status}). Retrying ${originalRequest.retryCount}/${MAX_RETRIES} after ${backoffDelay}ms...`,
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+      return api(originalRequest);
+    }
+
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

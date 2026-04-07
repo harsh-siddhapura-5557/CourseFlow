@@ -25,6 +25,11 @@ export interface Course {
   category: string;
   image: string;
   instructor?: Instructor;
+  duration?: string;
+  lessons?: number;
+  students?: string;
+  rating?: number;
+  reviewsCount?: string;
 }
 
 export interface AuthState {
@@ -34,6 +39,7 @@ export interface AuthState {
   login: (user: User, token: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  updateAvatar: (avatar: string) => Promise<void>;
 }
 
 export interface CourseState {
@@ -45,4 +51,5 @@ export interface CourseState {
   fetchCourses: () => Promise<void>;
   toggleBookmark: (id: number) => void;
   enrollInCourse: (id: number) => void;
+  resetStore: () => Promise<void>;
 }

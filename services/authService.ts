@@ -1,5 +1,6 @@
 import api from "./api";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useCourseStore } from "@/store/useCourseStore";
 
 export const authService = {
   login: async (identifier: string, password: string) => {
@@ -39,8 +40,10 @@ export const authService = {
     try {
       await api.post("/users/logout");
       await useAuthStore.getState().logout();
+      await useCourseStore.getState().resetStore();
     } catch (error: any) {
       await useAuthStore.getState().logout();
+      await useCourseStore.getState().resetStore();
     }
   },
 };

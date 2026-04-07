@@ -2,7 +2,7 @@ import { create } from "zustand";
 import * as SecureStore from "expo-secure-store";
 import { AuthState, User } from "@/types";
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   isInitialized: false,
@@ -27,6 +27,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     } catch (error) {
       set({ isInitialized: true });
+    }
+  },
+  updateAvatar: async (avatar) => {
+    const { user } = get();
+    if (user) {
+      const updatedUser = { ...user, avatar };
+      await SecureStore.setItemAsync("user_data", JSON.stringify(updatedUser));
+      set({ user: updatedUser });
     }
   },
 }));

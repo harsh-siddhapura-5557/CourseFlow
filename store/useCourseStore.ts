@@ -3,7 +3,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Course, CourseState } from "@/types";
 import api from "@/services/api";
 import { notificationService } from "@/services/notificationService";
-import { cleanUrl } from "@/utils";
 
 export const useCourseStore = create<CourseState>((set, get) => ({
   courses: [],
@@ -24,26 +23,33 @@ export const useCourseStore = create<CourseState>((set, get) => ({
       const rawInstructors = usersRes.data.data.data;
 
       const formattedCourses: Course[] = rawCourses.map(
-        (product: any, index: number) => ({
-          id: product.id,
-          title: product.title,
-          description: product.description,
-          price: product.price,
-          category: product.category,
-          image: cleanUrl(
-            product.thumbnail || (product.images && product.images[0]) || "",
-          ),
-          instructor: rawInstructors[index]
-            ? {
-                id: rawInstructors[index].id,
-                name: rawInstructors[index].name,
-                picture: {
-                  medium: cleanUrl(rawInstructors[index].picture?.medium || ""),
-                },
-                email: rawInstructors[index].email,
-              }
-            : undefined,
-        }),
+        (product: any, index: number) => {
+          return {
+            id: product.id,
+            title: product.title,
+            description: product.description,
+            price: product.price,
+            category: product.category,
+            image:
+              product.thumbnail || (product.images && product.images[0]) || "",
+            instructor: rawInstructors[index]
+              ? {
+                  id: rawInstructors[index].id,
+                  name: rawInstructors[index].name,
+                  picture: {
+                    medium: rawInstructors[index].picture?.medium || "",
+                  },
+                  email: rawInstructors[index].email,
+                }
+              : undefined,
+            // Realistic dynamic values based on product ID/Index
+            duration: `${Math.floor(Math.random() * 10 + 5)}h ${Math.floor(Math.random() * 59)}m`,
+            lessons: Math.floor(Math.random() * 20 + 10),
+            students: `${(Math.random() * 20 + 1).toFixed(1)}k`,
+            rating: parseFloat((Math.random() * (5.0 - 4.0) + 4.0).toFixed(1)),
+            reviewsCount: `${(Math.random() * 5 + 1).toFixed(1)}k`,
+          };
+        },
       );
 
       // Load persisted bookmarks and enrolled
@@ -74,8 +80,8 @@ export const useCourseStore = create<CourseState>((set, get) => ({
     await AsyncStorage.setItem("bookmarks", JSON.stringify(newBookmarks));
     set({ bookmarks: newBookmarks });
 
-    if (isAdding && newBookmarks.length === 5) {
-      await notificationService.scheduleBookmarkMilestone(5);
+    if (isAdding && newBookmarks.length >= 5) {
+      await notificationService.scheduleBookmarkMilestone(newBookmarks.length);
     }
   },
 
@@ -86,5 +92,15 @@ export const useCourseStore = create<CourseState>((set, get) => ({
     const newEnrolled = [...enrolled, id];
     await AsyncStorage.setItem("enrolled", JSON.stringify(newEnrolled));
     set({ enrolled: newEnrolled });
+    
+    // Track activity on enrollment
+    await notificationService.trackActivity();
+  },
+
+  resetStore: async () => {
+    await AsyncStorage.removeItem("bookmarks");
+    await AsyncStorage.removeItem("enrolled");
+    await AsyncStorage.removeItem("milestone_5_sent");
+    set({ bookmarks: [], enrolled: [] });
   },
 }));

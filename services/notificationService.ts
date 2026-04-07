@@ -33,15 +33,23 @@ export const notificationService = {
   },
 
   scheduleBookmarkMilestone: async (count: number) => {
-    if (count === 5) {
+    if (count >= 5) {
+      // Check if we already sent the 5+ milestone notification to avoid spamming
+      const milestoneSent = await AsyncStorage.getItem("milestone_5_sent");
+      if (milestoneSent === "true") return;
+
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Course Enthusiast! 🌟",
-          body: "You've bookmarked 5 courses. Ready to start your learning journey?",
+          body: `Wow! You've bookmarked ${count} courses. Ready to start your learning journey?`,
           data: { type: "bookmark_milestone" },
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
         },
         trigger: null, // Send immediately
       });
+
+      await AsyncStorage.setItem("milestone_5_sent", "true");
     }
   },
 

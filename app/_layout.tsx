@@ -1,24 +1,51 @@
 import { Stack, useRouter, useSegments } from "expo-router";
-import { useEffect } from "react";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { View, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import OfflineBanner from "@/components/OfflineBanner";
 import { notificationService } from "@/services/notificationService";
 
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
 export default function RootLayout() {
   const { isInitialized, checkAuth, token } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
+  const [isAppReady, setIsAppReady] = useState(false);
 
   useEffect(() => {
-    checkAuth();
-    notificationService.requestPermissions();
-    notificationService.trackActivity();
+    async function prepare() {
+      try {
+        await checkAuth();
+        await notificationService.requestPermissions();
+        await notificationService.trackActivity();
+        const interval = setInterval(
+          () => {
+            notificationService.trackActivity();
+          },
+          12 * 60 * 60 * 1000,
+        );
+        return () => clearInterval(interval);
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setIsAppReady(true);
+      }
+    }
+
+    prepare();
   }, []);
 
   useEffect(() => {
-    if (!isInitialized) return;
+    if (isInitialized && isAppReady) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [isInitialized, isAppReady]);
+
+  useEffect(() => {
+    if (!isInitialized || !isAppReady) return;
 
     const inAuthGroup = segments[0] === "(auth)";
 
@@ -27,11 +54,11 @@ export default function RootLayout() {
     } else if (token && inAuthGroup) {
       router.replace("/(tabs)");
     }
-  }, [token, segments, isInitialized]);
+  }, [token, segments, isInitialized, isAppReady]);
 
-  if (!isInitialized) {
+  if (!isInitialized || !isAppReady) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <View className="flex-1 items-center justify-center bg-[#f8fafc]">
         <ActivityIndicator size="large" color="#6366f1" />
       </View>
     );
@@ -52,17 +79,14 @@ export default function RootLayout() {
         <Stack.Screen
           name="course/[id]"
           options={{
-            headerShown: true,
+            headerShown: false,
             headerTitle: "Course Details",
-            headerBackTitle: "Back",
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: "#f8fafc" },
           }}
         />
         <Stack.Screen
           name="webview"
           options={{
-            headerShown: true,
+            headerShown: false,
             headerTitle: "Course Content",
           }}
         />
