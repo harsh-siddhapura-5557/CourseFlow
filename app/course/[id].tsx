@@ -269,7 +269,7 @@ export default function CourseDetailScreen() {
             <ActivityIndicator color="white" />
           ) : (
             <Text className="text-white font-black text-lg tracking-tight">
-              {isEnrolled ? "Continue Learning" : "Enroll Now"}
+              {isEnrolled ? "Webview" : "Enroll Now"}
             </Text>
           )}
         </TouchableOpacity>

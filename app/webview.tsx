@@ -22,18 +22,18 @@ const HTML_CONTENT = `
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 24px; background: #F8FAFC; color: #0F172A; margin: 0; line-height: 1.5; }
-        .header { margin-bottom: 32px; }
-        .title { font-size: 32px; font-weight: 900; margin: 0 0 8px 0; color: #0F172A; letter-spacing: -0.025em; }
+        .header { margin-bottom: 24px; }
+        .title { font-size: 28px; font-weight: 800; margin: 0 0 8px 0; color: #0F172A; letter-spacing: -0.025em; }
         .instructor { color: #6366F1; font-weight: 700; font-size: 16px; margin: 0; }
-        .card { background: white; padding: 24px; border-radius: 32px; border: 1px solid #F1F5F9; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
-        .video-container { position: relative; width: 100%; aspect-ratio: 16/9; background: #0F172A; border-radius: 24px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 24px; cursor: pointer; }
-        .video-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
-        .play-button { width: 64px; height: 64px; background: #6366F1; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.3); transition: transform 0.2s; }
-        .play-button:active { transform: scale(0.95); }
-        .play-icon { width: 0; height: 0; border-style: solid; border-width: 12px 0 12px 20px; border-color: transparent transparent transparent #ffffff; margin-left: 4px; }
-        .description { font-size: 18px; color: #64748B; font-weight: 500; margin: 0 0 32px 0; line-height: 1.6; }
-        button { background: #6366F1; color: white; border: none; padding: 20px; border-radius: 24px; font-weight: 800; width: 100%; font-size: 18px; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.2); transition: all 0.2s; }
-        button:active { transform: scale(0.98); opacity: 0.9; }
+        .card { background: white; padding: 24px; border-radius: 24px; border: 1px solid #F1F5F9; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .section-label { font-size: 12px; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: block; }
+        .description { font-size: 16px; color: #334155; font-weight: 500; margin: 0 0 24px 0; line-height: 1.6; }
+        button { background: #6366F1; color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 700; width: 100%; font-size: 16px; cursor: pointer; transition: opacity 0.2s; }
+        button:active { opacity: 0.8; }
+        .info-row { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 20px; border-top: 1px solid #F1F5F9; }
+        .info-item { text-align: center; flex: 1; }
+        .info-value { display: block; font-size: 16px; font-weight: 800; color: #0F172A; }
+        .info-label { display: block; font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -41,23 +41,39 @@ const HTML_CONTENT = `
         <h1 id="course-title" class="title">Loading...</h1>
         <p id="course-instructor" class="instructor"></p>
     </div>
+
     <div class="card">
-        <div class="video-container" onclick="window.ReactNativeWebView.postMessage('VIDEO_PLAY')">
-            <div class="video-overlay">
-                <div class="play-button">
-                    <div class="play-icon"></div>
-                </div>
+        <span class="section-label">Course Description</span>
+        <p id="course-description" class="description"></p>
+        
+        <div class="info-row">
+            <div class="info-item">
+                <span id="course-price" class="info-value">-</span>
+                <span class="info-label">Price</span>
+            </div>
+            <div class="info-item">
+                <span id="course-category" class="info-value">-</span>
+                <span class="info-label">Category</span>
             </div>
         </div>
-        <p id="course-description" class="description"></p>
-        <button onclick="window.ReactNativeWebView.postMessage('LESSON_COMPLETE')">Complete Lesson</button>
+
+        <div style="margin-top: 32px;">
+            <button onclick="window.ReactNativeWebView.postMessage('LESSON_COMPLETE')">Complete Lesson</button>
+        </div>
     </div>
+
     <script>
         window.addEventListener('message', function(event) {
-            const data = JSON.parse(event.data);
-            document.getElementById('course-title').innerText = data.title;
-            document.getElementById('course-instructor').innerText = 'by ' + (data.instructor ? data.instructor.name.first + ' ' + data.instructor.name.last : 'Joseph Evans');
-            document.getElementById('course-description').innerText = data.description;
+            try {
+                const data = JSON.parse(event.data);
+                document.getElementById('course-title').innerText = data.title || 'Untitled Course';
+                document.getElementById('course-instructor').innerText = 'by ' + (data.instructor ? data.instructor.name.first + ' ' + data.instructor.name.last : 'Joseph Evans');
+                document.getElementById('course-description').innerText = data.description || 'No description available.';
+                document.getElementById('course-price').innerText = '$' + (data.price || '0');
+                document.getElementById('course-category').innerText = data.category || 'General';
+            } catch (e) {
+                console.error('Error parsing course data:', e);
+            }
         });
     </script>
 </body>
@@ -65,7 +81,11 @@ const HTML_CONTENT = `
 `;
 
 export default function WebViewScreen() {
-  const { courseData } = useLocalSearchParams();
+  const {
+    courseData,
+    url: paramUrl,
+    title: paramTitle,
+  } = useLocalSearchParams();
   const webViewRef = useRef<WebView>(null);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -73,14 +93,17 @@ export default function WebViewScreen() {
 
   const [isReady, setIsReady] = useState(false);
 
+  // Determine if we're showing a specific URL or the course content HTML
+  const url = paramUrl as string;
+  const title =
+    (paramTitle as string) || (courseData ? "Course Content" : "Content");
+
   const onMessage = (event: any) => {
     const message = event.nativeEvent.data;
     if (message === "LESSON_COMPLETE") {
       Alert.alert("Congratulations!", "You have completed this lesson.", [
         { text: "Back to Course", onPress: () => router.back() },
       ]);
-    } else if (message === "VIDEO_PLAY") {
-      Alert.alert("Notice", "Video player would start here in a real app.");
     }
   };
 
@@ -104,8 +127,8 @@ export default function WebViewScreen() {
           Content Error
         </Text>
         <Text className="text-slate-500 text-lg font-medium text-center mb-10 leading-6 px-4">
-          We couldn't load the course content. Please check your connection or
-          try again.
+          We couldn't load the {title.toLowerCase()}. Please check your
+          connection or try again.
         </Text>
         <TouchableOpacity
           activeOpacity={0.8}
@@ -117,9 +140,7 @@ export default function WebViewScreen() {
           }}
         >
           <RefreshCw size={20} color={Colors.white} strokeWidth={2.5} />
-          <Text className="text-white font-black text-lg ml-3">
-            Retry Content
-          </Text>
+          <Text className="text-white font-black text-lg ml-3">Retry</Text>
         </TouchableOpacity>
       </View>
     );
@@ -137,24 +158,33 @@ export default function WebViewScreen() {
           <ChevronLeft size={24} color={Colors.text} strokeWidth={2.5} />
         </TouchableOpacity>
         <View className="flex-1 items-center mr-10">
-          <Text className="text-xl font-extrabold text-slate-900">
-            Course Content
-          </Text>
+          <Text className="text-xl font-extrabold text-slate-900">{title}</Text>
         </View>
       </View>
 
       <View className="flex-1">
         <WebView
           ref={webViewRef}
-          source={{ 
-            html: HTML_CONTENT,
-            headers: {
-              ...(courseData && typeof courseData === 'string' && JSON.parse(courseData as string).id
-                ? { 'X-Course-Id': JSON.parse(courseData as string).id.toString() }
-                : {}),
-              'X-App-Platform': 'React-Native-Expo'
-            }
-          }}
+          source={
+            url
+              ? { uri: url }
+              : {
+                  html: HTML_CONTENT,
+                  headers: courseData
+                    ? {
+                        ...(typeof courseData === "string" &&
+                        JSON.parse(courseData as string).id
+                          ? {
+                              "X-Course-Id": JSON.parse(
+                                courseData as string,
+                              ).id.toString(),
+                            }
+                          : {}),
+                        "X-App-Platform": "React-Native-Expo",
+                      }
+                    : {},
+                }
+          }
           onMessage={onMessage}
           onLoadStart={() => setLoading(true)}
           onLoadEnd={() => {

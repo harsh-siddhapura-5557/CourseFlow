@@ -7,7 +7,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   LogOut,
   Settings,
-  Shield,
   BookOpen,
   GraduationCap,
   Star,
@@ -100,17 +99,8 @@ export default function ProfileScreen() {
                 <Settings size={20} color={Colors.secondary} strokeWidth={2} />
               }
               title="Settings"
-              onPress={() => router.push("/settings")}
-            />
-            <MenuItem
-              icon={
-                <Shield size={20} color={Colors.secondary} strokeWidth={2} />
-              }
-              title="Privacy Policy"
               isLast
-              onPress={() =>
-                router.push("/webview?url=https://www.example.com/privacy")
-              }
+              onPress={() => router.push("/settings")}
             />
           </View>
         </View>

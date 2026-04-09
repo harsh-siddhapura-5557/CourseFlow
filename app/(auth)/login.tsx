@@ -21,22 +21,68 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+    general: "",
+  });
   const router = useRouter();
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please fill in all fields");
+    // Reset errors
+    setErrors({ email: "", password: "", general: "" });
+
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password; // Passwords shouldn't be trimmed usually
+
+    let hasError = false;
+    const newErrors = { email: "", password: "", general: "" };
+
+    if (!trimmedEmail) {
+      newErrors.email = "Username or Email is required";
+      hasError = true;
+    } else if (trimmedEmail.includes("@")) {
+      // Basic email regex
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        newErrors.email = "Please enter a valid email address";
+        hasError = true;
+      }
+    }
+
+    if (!trimmedPassword) {
+      newErrors.password = "Password is required";
+      hasError = true;
+    }
+
+    if (hasError) {
+      setErrors(newErrors);
       return;
     }
 
     setLoading(true);
     try {
       // FreeAPI login can take email OR username
-      // We'll pass it as 'email' but it can be username too
-      await authService.login(email.toLowerCase().trim(), password);
+      await authService.login(trimmedEmail.toLowerCase(), trimmedPassword);
       router.replace("/(tabs)");
     } catch (error: any) {
-      Alert.alert("Login Failed", error.message);
+      const msg = error.message.toLowerCase();
+      if (msg.includes("user does not exist") || msg.includes("not found")) {
+        setErrors({
+          ...newErrors,
+          email: "Account not found. Please register first.",
+        });
+      } else if (
+        msg.includes("password") ||
+        msg.includes("invalid credentials")
+      ) {
+        setErrors({
+          ...newErrors,
+          password: "Incorrect password. Please try again.",
+        });
+      } else {
+        setErrors({ ...newErrors, general: error.message });
+      }
     } finally {
       setLoading(false);
     }
@@ -48,8 +94,8 @@ export default function LoginScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1"
       >
-        <ScrollView 
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} 
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
           className="p-6"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -65,16 +111,34 @@ export default function LoginScreen() {
             </View>
 
             <View className="space-y-6">
+              {errors.general ? (
+                <View className="bg-red-50 p-4 rounded-2xl border border-red-100">
+                  <Text className="text-red-500 text-sm font-semibold text-center">
+                    {errors.general}
+                  </Text>
+                </View>
+              ) : null}
               <View>
-                <Text className="text-slate-900 font-semibold mb-2 ml-1">Username or Email</Text>
+                <Text className="text-slate-900 font-semibold mb-2 ml-1">
+                  Username or Email
+                </Text>
                 <TextInput
-                  className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-slate-900 h-14"
+                  className={`bg-slate-50 p-4 rounded-2xl border ${errors.email ? "border-red-500" : "border-slate-100"} text-slate-900 h-14`}
                   placeholder="Username or Email"
                   placeholderTextColor={Colors.muted}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (errors.email || errors.general)
+                      setErrors({ ...errors, email: "", general: "" });
+                  }}
                   autoCapitalize="none"
                 />
+                {errors.email ? (
+                  <Text className="text-red-500 text-xs mt-1 ml-2 font-medium">
+                    {errors.email}
+                  </Text>
+                ) : null}
               </View>
 
               <View>
@@ -83,11 +147,15 @@ export default function LoginScreen() {
                 </Text>
                 <View className="relative justify-center">
                   <TextInput
-                    className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-slate-900 pr-12 h-14"
+                    className={`bg-slate-50 p-4 rounded-2xl border ${errors.password ? "border-red-500" : "border-slate-100"} text-slate-900 pr-12 h-14`}
                     placeholder="••••••••"
                     placeholderTextColor={Colors.muted}
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      if (errors.password || errors.general)
+                        setErrors({ ...errors, password: "", general: "" });
+                    }}
                     secureTextEntry={!showPassword}
                   />
                   <TouchableOpacity
@@ -102,6 +170,11 @@ export default function LoginScreen() {
                     )}
                   </TouchableOpacity>
                 </View>
+                {errors.password ? (
+                  <Text className="text-red-500 text-xs mt-1 ml-2 font-medium">
+                    {errors.password}
+                  </Text>
+                ) : null}
               </View>
 
               <TouchableOpacity

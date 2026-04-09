@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
 } from "react-native";
 import { User, Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -27,16 +28,45 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const [imageError, setImageError] = useState(false);
   const { updateAvatar } = useAuthStore();
 
+  // Reset image error when avatar changes
+  React.useEffect(() => {
+    setImageError(false);
+  }, [avatar]);
+
+  // Extract avatar URL and handle relative paths from FreeAPI
+  const avatarUrl = React.useMemo(() => {
+    if (!avatar) return null;
+    let url = typeof avatar === "object" ? (avatar as any).url : avatar;
+    if (typeof url === "string" && url.startsWith("public/")) {
+      return `https://api.freeapi.app/${url}`;
+    }
+    return url;
+  }, [avatar]);
+
   const handlePickImage = async () => {
     try {
-      const { status } =
+      const { status, canAskAgain } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== "granted") {
-        Alert.alert(
-          "Permission Required",
-          "We need your permission to access your gallery.",
-        );
+        if (!canAskAgain) {
+          Alert.alert(
+            "Permission Required",
+            "You have permanently denied gallery access. Please enable it in your device settings to update your profile picture.",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Open Settings",
+                onPress: () => Linking.openSettings(),
+              },
+            ],
+          );
+        } else {
+          Alert.alert(
+            "Permission Required",
+            "We need your permission to access your gallery to let you choose a profile picture.",
+          );
+        }
         return;
       }
 
@@ -65,12 +95,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <View className="w-32 h-32 bg-indigo-50 rounded-full items-center justify-center border-4 border-white shadow-2xl overflow-hidden">
           {isUploading ? (
             <ActivityIndicator size="large" color={Colors.primary} />
-          ) : typeof avatar === "string" &&
-            avatar !== "" &&
-            !avatar.includes("via.placeholder.com") &&
+          ) : typeof avatarUrl === "string" &&
+            avatarUrl !== "" &&
+            !avatarUrl.includes("via.placeholder.com") &&
             !imageError ? (
             <Image
-              source={{ uri: avatar }}
+              source={{ uri: avatarUrl }}
               className="w-full h-full"
               resizeMode="cover"
               onError={() => setImageError(true)}

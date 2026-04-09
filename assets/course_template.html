@@ -1,95 +1,92 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Course Content</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            padding: 20px;
-            color: #0f172a;
-            line-height: 1.6;
-            background-color: #f8fafc;
-        }
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-        }
-        .header {
-            margin-bottom: 24px;
-        }
-        .title {
-            font-size: 24px;
-            font-weight: 800;
-            margin-bottom: 8px;
-            color: #1e293b;
-        }
-        .instructor {
-            color: #6366f1;
-            font-weight: 600;
-            font-size: 16px;
-        }
-        .content {
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .video-placeholder {
-            background: #000;
-            width: 100%;
-            aspect-ratio: 16/9;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
-        .button {
-            background: #6366f1;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: bold;
-            width: 100%;
-            margin-top: 20px;
-            font-size: 16px;
-        }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        padding: 20px;
+        color: #0f172a;
+        line-height: 1.6;
+        background-color: #f8fafc;
+      }
+      .container {
+        max-width: 100%;
+        margin: 0 auto;
+      }
+      .header {
+        margin-bottom: 24px;
+      }
+      .title {
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        color: #1e293b;
+      }
+      .instructor {
+        color: #6366f1;
+        font-weight: 600;
+        font-size: 16px;
+      }
+      .content {
+        background: white;
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      .button {
+        background: #6366f1;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: bold;
+        width: 100%;
+        margin-top: 20px;
+        font-size: 16px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <div id="course-title" class="title">Loading Course...</div>
-            <div id="course-instructor" class="instructor"></div>
-        </div>
-        
-        <div class="content">
-            <div class="video-placeholder" onclick="sendMessageToRN('Video started')">
-                <div style="font-size: 40px;">▶</div>
-            </div>
-            <div id="course-description"></div>
-            <button class="button" onclick="sendMessageToRN('Course Completed')">Complete Lesson</button>
-        </div>
+      <div class="header">
+        <div id="course-title" class="title">Loading Course...</div>
+        <div id="course-instructor" class="instructor"></div>
+      </div>
+
+      <div class="content">
+        <div id="course-description"></div>
+        <button class="button" onclick="sendMessageToRN('Course Completed')">
+          Complete Lesson
+        </button>
+      </div>
     </div>
 
     <script>
-        function sendMessageToRN(message) {
-            if (window.ReactNativeWebView) {
-                window.ReactNativeWebView.postMessage(message);
-            }
+      function sendMessageToRN(message) {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(message);
         }
+      }
 
-        window.addEventListener('message', function(event) {
-            const data = JSON.parse(event.data);
-            document.getElementById('course-title').innerText = data.title;
-            document.getElementById('course-instructor').innerText = 'by ' + (data.instructor ? data.instructor.name.first + ' ' + data.instructor.name.last : 'Unknown');
-            document.getElementById('course-description').innerText = data.description;
-        });
+      window.addEventListener("message", function (event) {
+        const data = JSON.parse(event.data);
+        document.getElementById("course-title").innerText = data.title;
+        document.getElementById("course-instructor").innerText =
+          "by " +
+          (data.instructor
+            ? data.instructor.name.first + " " + data.instructor.name.last
+            : "Unknown");
+        document.getElementById("course-description").innerText =
+          data.description;
+      });
     </script>
-</body>
+  </body>
 </html>

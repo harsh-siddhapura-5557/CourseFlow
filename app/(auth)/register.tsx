@@ -22,35 +22,77 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    username: "",
+    email: "",
+    password: "",
+    general: "",
+  });
   const router = useRouter();
 
   const handleRegister = async () => {
-    if (!username || !email || !password) {
-      Alert.alert("Error", "Please fill in all fields");
-      return;
+    // Reset errors
+    setErrors({ username: "", email: "", password: "", general: "" });
+
+    const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password; // Passwords shouldn't be trimmed usually
+
+    let hasError = false;
+    const newErrors = { username: "", email: "", password: "", general: "" };
+
+    if (!trimmedUsername) {
+      newErrors.username = "Username is required";
+      hasError = true;
+    } else if (trimmedUsername.length < 3) {
+      newErrors.username = "Username must be at least 3 characters";
+      hasError = true;
     }
 
-    if (password.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters long");
+    if (!trimmedEmail) {
+      newErrors.email = "Email is required";
+      hasError = true;
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        newErrors.email = "Please enter a valid email address";
+        hasError = true;
+      }
+    }
+
+    if (!trimmedPassword) {
+      newErrors.password = "Password is required";
+      hasError = true;
+    } else if (trimmedPassword.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
+      hasError = true;
+    }
+
+    if (hasError) {
+      setErrors(newErrors);
       return;
     }
 
     setLoading(true);
     try {
       await authService.register({
-        username: username.toLowerCase().trim(),
-        email: email.toLowerCase().trim(),
-        password,
+        username: trimmedUsername.toLowerCase(),
+        email: trimmedEmail.toLowerCase(),
+        password: trimmedPassword,
         role: "USER",
       });
       Alert.alert("Success", "Account created successfully! Please login.", [
         { text: "OK", onPress: () => router.replace("/(auth)/login") },
       ]);
     } catch (error: any) {
-      console.error("Registration failed:", error);
-      const errorMessage =
-        error.message || "Something went wrong. Please try again.";
-      Alert.alert("Registration Failed", errorMessage);
+      const msg = error.message.toLowerCase();
+      if (msg.includes("username") && msg.includes("exists")) {
+        setErrors({ ...newErrors, username: "Username is already taken" });
+      } else if (msg.includes("email") && msg.includes("exists")) {
+        setErrors({ ...newErrors, email: "Email is already registered" });
+      } else {
+        setErrors({ ...newErrors, general: error.message });
+      }
     } finally {
       setLoading(false);
     }
@@ -62,8 +104,8 @@ export default function RegisterScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1"
       >
-        <ScrollView 
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} 
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
           className="p-6"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -79,20 +121,34 @@ export default function RegisterScreen() {
             </View>
 
             <View className="space-y-6">
+              {errors.general ? (
+                <View className="bg-red-50 p-4 rounded-2xl border border-red-100">
+                  <Text className="text-red-500 text-sm font-semibold text-center">
+                    {errors.general}
+                  </Text>
+                </View>
+              ) : null}
               <View>
                 <Text className="text-slate-900 font-semibold mb-2 ml-1">
                   Username
                 </Text>
                 <TextInput
-                  className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-slate-900"
+                  className={`bg-slate-50 p-4 rounded-2xl border ${errors.username ? "border-red-500" : "border-slate-100"} text-slate-900`}
                   placeholder="johndoe"
                   placeholderTextColor="#94a3b8"
                   value={username}
-                  onChangeText={(val) =>
-                    setUsername(val.toLowerCase().replace(/\s/g, ""))
-                  }
+                  onChangeText={(val) => {
+                    setUsername(val.toLowerCase().replace(/\s/g, ""));
+                    if (errors.username || errors.general)
+                      setErrors({ ...errors, username: "", general: "" });
+                  }}
                   autoCapitalize="none"
                 />
+                {errors.username ? (
+                  <Text className="text-red-500 text-xs mt-1 ml-2 font-medium">
+                    {errors.username}
+                  </Text>
+                ) : null}
               </View>
 
               <View>
@@ -100,14 +156,23 @@ export default function RegisterScreen() {
                   Email Address
                 </Text>
                 <TextInput
-                  className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-slate-900"
+                  className={`bg-slate-50 p-4 rounded-2xl border ${errors.email ? "border-red-500" : "border-slate-100"} text-slate-900`}
                   placeholder="name@example.com"
                   placeholderTextColor="#94a3b8"
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(val) => {
+                    setEmail(val);
+                    if (errors.email || errors.general)
+                      setErrors({ ...errors, email: "", general: "" });
+                  }}
                   autoCapitalize="none"
                   keyboardType="email-address"
                 />
+                {errors.email ? (
+                  <Text className="text-red-500 text-xs mt-1 ml-2 font-medium">
+                    {errors.email}
+                  </Text>
+                ) : null}
               </View>
 
               <View>
@@ -116,11 +181,15 @@ export default function RegisterScreen() {
                 </Text>
                 <View className="relative justify-center">
                   <TextInput
-                    className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-slate-900 pr-12 h-14"
+                    className={`bg-slate-50 p-4 rounded-2xl border ${errors.password ? "border-red-500" : "border-slate-100"} text-slate-900 pr-12 h-14`}
                     placeholder="••••••••"
                     placeholderTextColor="#94a3b8"
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(val) => {
+                      setPassword(val);
+                      if (errors.password || errors.general)
+                        setErrors({ ...errors, password: "", general: "" });
+                    }}
                     secureTextEntry={!showPassword}
                   />
                   <TouchableOpacity
@@ -135,6 +204,11 @@ export default function RegisterScreen() {
                     )}
                   </TouchableOpacity>
                 </View>
+                {errors.password ? (
+                  <Text className="text-red-500 text-xs mt-1 ml-2 font-medium">
+                    {errors.password}
+                  </Text>
+                ) : null}
               </View>
 
               <TouchableOpacity
