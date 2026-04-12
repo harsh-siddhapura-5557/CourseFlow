@@ -2,6 +2,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useCourseStore } from "@/store/useCourseStore";
 import { View, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import OfflineBanner from "@/components/OfflineBanner";
@@ -19,6 +20,9 @@ export default function RootLayout() {
     async function prepare() {
       try {
         await checkAuth();
+        if (useAuthStore.getState().token) {
+          await useCourseStore.getState().mergeRemoteProgressAfterLogin();
+        }
         await notificationService.requestPermissions();
         await notificationService.trackActivity();
         const interval = setInterval(
@@ -90,6 +94,8 @@ export default function RootLayout() {
             headerTitle: "Course Content",
           }}
         />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="change-password" options={{ headerShown: false }} />
       </Stack>
     </View>
   );

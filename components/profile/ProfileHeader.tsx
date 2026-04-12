@@ -10,8 +10,26 @@ import {
 } from "react-native";
 import { User, Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
-import { useAuthStore } from "@/store/useAuthStore";
+import { File as ExpoFsFile } from "expo-file-system";
+import { authService } from "@/services/authService";
 import { Colors } from "@/constants/Colors";
+import { MAX_PROFILE_IMAGE_BYTES } from "@/constants/mediaLimits";
+import { logger } from "@/utils/logger";
+
+function getPickedImageByteSize(asset: ImagePicker.ImagePickerAsset): number | null {
+  if (typeof asset.fileSize === "number" && asset.fileSize > 0) {
+    return asset.fileSize;
+  }
+  try {
+    const file = new ExpoFsFile(asset.uri);
+    if (file.exists && typeof file.size === "number" && file.size > 0) {
+      return file.size;
+    }
+  } catch {
+    /* e.g. some ph:// or unsupported URIs */
+  }
+  return null;
+}
 
 interface ProfileHeaderProps {
   name: string;
@@ -26,17 +44,14 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const { updateAvatar } = useAuthStore();
 
-  // Reset image error when avatar changes
   React.useEffect(() => {
     setImageError(false);
   }, [avatar]);
 
-  // Extract avatar URL and handle relative paths from FreeAPI
   const avatarUrl = React.useMemo(() => {
     if (!avatar) return null;
-    let url = typeof avatar === "object" ? (avatar as any).url : avatar;
+    const url = typeof avatar === "object" ? (avatar as { url?: string }).url : avatar;
     if (typeof url === "string" && url.startsWith("public/")) {
       return `https://api.freeapi.app/${url}`;
     }
@@ -71,16 +86,41 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.85,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const byteSize = getPickedImageByteSize(asset);
+        if (byteSize != null && byteSize > MAX_PROFILE_IMAGE_BYTES) {
+          Alert.alert(
+            "Image too large",
+            `Please choose a photo under 5 MB (this one is about ${(byteSize / (1024 * 1024)).toFixed(1)} MB).`,
+          );
+          return;
+        }
+
         setIsUploading(true);
-        setImageError(false); // Reset error state for new image
-        await updateAvatar(result.assets[0].uri);
-        setIsUploading(false);
+        setImageError(false);
+        try {
+          await authService.updateAvatar(asset.uri);
+        } catch (error: unknown) {
+          const err = error as {
+            response?: { data?: { message?: string } };
+            message?: string;
+          };
+          const msg =
+            err.response?.data?.message ||
+            err.message ||
+            "Could not upload profile photo. Please try again.";
+          logger.error("ProfileHeader", "Avatar upload failed", { message: msg });
+          Alert.alert("Upload failed", String(msg));
+        } finally {
+          setIsUploading(false);
+        }
       }
     } catch (error) {
       console.error("Image picking error:", error);
@@ -101,7 +141,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             !imageError ? (
             <Image
               source={{ uri: avatarUrl }}
-              className="w-full h-full"
+              className="w-full h-full rounded-full"
               resizeMode="cover"
               onError={() => setImageError(true)}
             />

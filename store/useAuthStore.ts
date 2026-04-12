@@ -2,102 +2,93 @@ import { create } from "zustand";
 import * as SecureStore from "expo-secure-store";
 import { AuthState, User } from "@/types";
 import api from "@/services/api";
+import { SECURE_STORE_KEYS } from "@/constants/storageKeys";
+import { logger } from "@/utils/logger";
+import { useCourseStore } from "@/store/useCourseStore";
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   isInitialized: false,
-  login: async (user, token) => {
-    await SecureStore.setItemAsync("auth_token", token);
-    await SecureStore.setItemAsync("user_data", JSON.stringify(user));
-    set({ user, token });
+
+  login: async (user, accessToken, refreshToken) => {
+    await SecureStore.setItemAsync(SECURE_STORE_KEYS.ACCESS_TOKEN, accessToken);
+    if (refreshToken) {
+      await SecureStore.setItemAsync(SECURE_STORE_KEYS.REFRESH_TOKEN, refreshToken);
+    }
+    await SecureStore.setItemAsync(SECURE_STORE_KEYS.USER_DATA, JSON.stringify(user));
+    set({ user, token: accessToken });
+    logger.info("AuthStore", "Session persisted to SecureStore", {
+      userId: user?.id,
+      hasRefresh: Boolean(refreshToken),
+    });
   },
+
   logout: async () => {
-    await SecureStore.deleteItemAsync("auth_token");
-    await SecureStore.deleteItemAsync("user_data");
+    try {
+      await SecureStore.deleteItemAsync(SECURE_STORE_KEYS.ACCESS_TOKEN);
+    } catch {
+      /* */
+    }
+    try {
+      await SecureStore.deleteItemAsync(SECURE_STORE_KEYS.REFRESH_TOKEN);
+    } catch {
+      /* */
+    }
+    try {
+      await SecureStore.deleteItemAsync(SECURE_STORE_KEYS.USER_DATA);
+    } catch {
+      /* */
+    }
     set({ user: null, token: null });
+    await useCourseStore.getState().resetStore();
+    logger.info("AuthStore", "Local session and course cache cleared");
   },
+
   checkAuth: async () => {
     try {
-      const token = await SecureStore.getItemAsync("auth_token");
+      const token = await SecureStore.getItemAsync(SECURE_STORE_KEYS.ACCESS_TOKEN);
       if (token) {
-        // Always try to fetch latest profile from server
-        const response = await api.get("/users/current-user", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const user = response.data.data;
+        const response = await api.get("/users/current-user");
+        const user = response.data?.data;
         if (user) {
-          await SecureStore.setItemAsync("user_data", JSON.stringify(user));
+          await SecureStore.setItemAsync(
+            SECURE_STORE_KEYS.USER_DATA,
+            JSON.stringify(user),
+          );
           set({ token, user, isInitialized: true });
+          logger.info("AuthStore", "checkAuth: profile hydrated from API");
           return;
         }
       }
 
-      const userData = await SecureStore.getItemAsync("user_data");
+      const userData = await SecureStore.getItemAsync(SECURE_STORE_KEYS.USER_DATA);
       if (token && userData) {
         set({ token, user: JSON.parse(userData), isInitialized: true });
+        logger.warn("AuthStore", "checkAuth: using cached user (API returned empty)");
       } else {
         set({ isInitialized: true });
       }
-    } catch (error: any) {
-      console.log("[AuthStore] CheckAuth error:", error.message);
-      
-      // If it's a 401 error, we should logout the user because the token is invalid
-      if (error.response?.status === 401) {
-        console.warn("[AuthStore] Invalid session. Clearing local state...");
-        await SecureStore.deleteItemAsync("auth_token");
-        await SecureStore.deleteItemAsync("user_data");
-        set({ user: null, token: null, isInitialized: true });
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number }; message?: string };
+      logger.error("AuthStore", "checkAuth error", {
+        message: err.message,
+        status: err.response?.status,
+      });
+
+      if (err.response?.status === 401) {
+        await get().logout();
+        set({ isInitialized: true });
         return;
       }
 
-      const token = await SecureStore.getItemAsync("auth_token");
-      const userData = await SecureStore.getItemAsync("user_data");
+      const token = await SecureStore.getItemAsync(SECURE_STORE_KEYS.ACCESS_TOKEN);
+      const userData = await SecureStore.getItemAsync(SECURE_STORE_KEYS.USER_DATA);
       if (token && userData) {
         set({ token, user: JSON.parse(userData), isInitialized: true });
+        logger.warn("AuthStore", "checkAuth: offline or API error; using cached user");
       } else {
         set({ isInitialized: true });
-      }
-    }
-  },
-  updateAvatar: async (avatar) => {
-    const { user, token } = get();
-    if (user && token) {
-      try {
-        const formData = new FormData();
-        const filename = avatar.split("/").pop();
-        const match = /\.(\w+)$/.exec(filename || "");
-        const type = match ? `image/${match[1]}` : `image`;
-
-        formData.append("avatar", {
-          uri: avatar,
-          name: filename,
-          type,
-        } as any);
-
-        const response = await api.patch("/users/avatar", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-
-        const updatedUser = response.data.data;
-        if (updatedUser) {
-          await SecureStore.setItemAsync(
-            "user_data",
-            JSON.stringify(updatedUser),
-          );
-          set({ user: updatedUser });
-        }
-      } catch (error: any) {
-        console.error("[AuthStore] updateAvatar error:", error.message);
-        // Fallback to local if server fails (not recommended but for UX)
-        const updatedUser = { ...user, avatar };
-        await SecureStore.setItemAsync(
-          "user_data",
-          JSON.stringify(updatedUser),
-        );
-        set({ user: updatedUser });
       }
     }
   },

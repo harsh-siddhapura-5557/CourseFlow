@@ -1,7 +1,7 @@
 import React, { memo, useState } from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import { Course } from "@/types";
-import { Star, Heart, Users, BookOpen, } from "lucide-react-native";
+import { Star, Heart, Users, BookOpen } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { Colors } from "@/constants/Colors";
 
@@ -11,16 +11,13 @@ interface CourseCardProps {
   onToggleBookmark: (id: number) => void;
 }
 
-const CourseCard = ({
+const CourseCard = memo(function CourseCard({
   course,
   isBookmarked,
   onToggleBookmark,
-}: CourseCardProps) => {
+}: CourseCardProps) {
   const router = useRouter();
   const [imageError, setImageError] = useState(false);
-
-  const fallbackImage =
-    "https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?w=800&q=80";
 
   return (
     <TouchableOpacity
@@ -94,6 +91,6 @@ const CourseCard = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 export default CourseCard;

@@ -36,10 +36,9 @@ export interface AuthState {
   user: User | null;
   token: string | null;
   isInitialized: boolean;
-  login: (user: User, token: string) => Promise<void>;
+  login: (user: User, accessToken: string, refreshToken?: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
-  updateAvatar: (avatar: string) => Promise<void>;
 }
 
 export interface CourseState {
@@ -49,7 +48,10 @@ export interface CourseState {
   loading: boolean;
   error: string | null;
   fetchCourses: () => Promise<void>;
-  toggleBookmark: (id: number) => void;
-  enrollInCourse: (id: number) => void;
+  /** Persists to AsyncStorage; syncs to server when online and authenticated */
+  toggleBookmark: (id: number) => Promise<void>;
+  enrollInCourse: (id: number) => Promise<void>;
   resetStore: () => Promise<void>;
+  /** After login / cold start with token: merge server + local bookmark/enrolled lists */
+  mergeRemoteProgressAfterLogin: () => Promise<void>;
 }

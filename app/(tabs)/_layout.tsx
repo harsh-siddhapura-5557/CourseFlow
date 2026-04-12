@@ -5,9 +5,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: true,
-        headerShadowVisible: false,
-        headerStyle: { backgroundColor: "#f8fafc" },
+        headerShown: false,
         tabBarStyle: {
           backgroundColor: "#ffffff",
           borderTopWidth: 1,
@@ -26,7 +24,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <LayoutDashboard color={color} size={size} />
           ),
-          headerTitle: "Explore Courses",
         }}
       />
       <Tabs.Screen
@@ -36,7 +33,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Heart color={color} size={size} />
           ),
-          headerTitle: "Saved Courses",
         }}
       />
       <Tabs.Screen
@@ -46,7 +42,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <User color={color} size={size} />
           ),
-          headerTitle: "My Profile",
         }}
       />
     </Tabs>

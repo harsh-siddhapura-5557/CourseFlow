@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from "react-native";
+import { validateLoginIdentifier } from "@/utils/validation";
 import { Link, useRouter } from "expo-router";
 import { authService } from "@/services/authService";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -27,27 +27,22 @@ export default function LoginScreen() {
     general: "",
   });
   const router = useRouter();
+  const passwordRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
     // Reset errors
     setErrors({ email: "", password: "", general: "" });
 
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password; // Passwords shouldn't be trimmed usually
+    const trimmedIdentifier = email.trim();
+    const trimmedPassword = password;
 
     let hasError = false;
     const newErrors = { email: "", password: "", general: "" };
 
-    if (!trimmedEmail) {
-      newErrors.email = "Username or Email is required";
+    const idErr = validateLoginIdentifier(email);
+    if (idErr) {
+      newErrors.email = idErr;
       hasError = true;
-    } else if (trimmedEmail.includes("@")) {
-      // Basic email regex
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(trimmedEmail)) {
-        newErrors.email = "Please enter a valid email address";
-        hasError = true;
-      }
     }
 
     if (!trimmedPassword) {
@@ -62,8 +57,7 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      // FreeAPI login can take email OR username
-      await authService.login(trimmedEmail.toLowerCase(), trimmedPassword);
+      await authService.login(trimmedIdentifier.toLowerCase(), trimmedPassword);
       router.replace("/(tabs)");
     } catch (error: any) {
       const msg = error.message.toLowerCase();
@@ -91,18 +85,24 @@ export default function LoginScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        behavior={Platform.OS === "ios" ? "padding" : Platform.OS === "android" ? "height" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         className="flex-1"
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
-          className="p-6"
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            paddingHorizontal: 24,
+            paddingTop: 16,
+            paddingBottom: 40,
+          }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          <View className="flex-1 justify-center">
+          <View className="w-full">
             <View className="mb-10">
               <Text className="text-4xl font-bold text-slate-900 mb-2">
                 Welcome Back
@@ -135,6 +135,13 @@ export default function LoginScreen() {
                       setErrors({ ...errors, email: "", general: "" });
                   }}
                   autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="username"
+                  textContentType="username"
+                  keyboardType="email-address"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => passwordRef.current?.focus()}
                 />
                 {errors.email ? (
                   <Text className="text-red-500 text-xs mt-1 ml-2 font-medium">
@@ -149,6 +156,7 @@ export default function LoginScreen() {
                 </Text>
                 <View className="relative justify-center">
                   <TextInput
+                    ref={passwordRef}
                     className={`bg-slate-50 p-4 rounded-2xl border ${errors.password ? "border-red-500" : "border-slate-100"} text-slate-900 pr-12 h-14`}
                     placeholder="••••••••"
                     placeholderTextColor={Colors.muted}
@@ -159,6 +167,10 @@ export default function LoginScreen() {
                         setErrors({ ...errors, password: "", general: "" });
                     }}
                     secureTextEntry={!showPassword}
+                    autoComplete="password"
+                    textContentType="password"
+                    returnKeyType="go"
+                    onSubmitEditing={handleLogin}
                   />
                   <TouchableOpacity
                     className="absolute right-0 inset-y-0 px-4 justify-center"

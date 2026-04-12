@@ -1,9 +1,9 @@
 import React from "react";
 import { View, ScrollView, Alert, TouchableOpacity, Text } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCourseStore } from "@/store/useCourseStore";
 import { authService } from "@/services/authService";
-import { SafeAreaView } from "react-native-safe-area-context";
 import {
   LogOut,
   Settings,
@@ -45,11 +45,16 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
+      <View className="px-5 pt-2 pb-3 bg-white border-b border-slate-50">
+        <Text className="text-3xl font-bold text-slate-900 tracking-tight">
+          My Profile
+        </Text>
+      </View>
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
-        className="bg-[#F8FAFC]"
+        className="flex-1 bg-[#F8FAFC]"
       >
         <ProfileHeader
           name={user?.username || "Guest User"}

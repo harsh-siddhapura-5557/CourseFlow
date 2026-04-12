@@ -8,14 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  Bell,
-  Lock,
-  Trash2,
-  ChevronRight,
-  ShieldCheck,
-  ChevronLeft,
-} from "lucide-react-native";
+import { Bell, Lock, Trash2, ChevronRight, ChevronLeft } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import { useRouter } from "expo-router";
 
@@ -25,13 +18,6 @@ export default function SettingsScreen() {
 
   const toggleNotifications = () => {
     setIsNotificationsEnabled((previousState) => !isNotificationsEnabled);
-  };
-
-  const handlePlaceholderAction = (title: string) => {
-    Alert.alert(
-      title,
-      `${title} feature will be implemented in the next update.`,
-    );
   };
 
   const handleDeleteAccount = () => {
@@ -104,8 +90,9 @@ export default function SettingsScreen() {
         </Text>
         <View className="bg-white rounded-[32px] p-2 border border-slate-100 shadow-sm mb-8">
           <TouchableOpacity
-            onPress={() => handlePlaceholderAction("Change Password")}
+            onPress={() => router.push("/change-password")}
             className="flex-row items-center p-5 border-b border-slate-50"
+            activeOpacity={0.7}
           >
             <View className="w-11 h-11 bg-amber-50 rounded-2xl items-center justify-center mr-4">
               <Lock size={22} color={Colors.warning} strokeWidth={2.5} />
