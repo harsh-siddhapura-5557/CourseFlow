@@ -41,6 +41,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch (error: any) {
       console.log("[AuthStore] CheckAuth error:", error.message);
+      
+      // If it's a 401 error, we should logout the user because the token is invalid
+      if (error.response?.status === 401) {
+        console.warn("[AuthStore] Invalid session. Clearing local state...");
+        await SecureStore.deleteItemAsync("auth_token");
+        await SecureStore.deleteItemAsync("user_data");
+        set({ user: null, token: null, isInitialized: true });
+        return;
+      }
+
       const token = await SecureStore.getItemAsync("auth_token");
       const userData = await SecureStore.getItemAsync("user_data");
       if (token && userData) {

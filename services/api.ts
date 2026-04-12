@@ -49,7 +49,7 @@ api.interceptors.response.use(
           `${BASE_URL}/users/refresh-token`,
           {},
           {
-            withCredentials: true, // Required if cookies are used for refresh tokens
+            withCredentials: true,
           },
         );
         const { accessToken } = refreshResponse.data.data;
@@ -61,13 +61,18 @@ api.interceptors.response.use(
         }
         return api(originalRequest);
       } catch (refreshError: any) {
-        if (refreshError.response?.status !== 401) {
+        // If refresh fails with 401, it means the refresh token is also invalid/expired
+        if (refreshError.response?.status === 401) {
+          console.warn("[API] Refresh token expired. Logging out...");
+        } else {
           console.error("[API] Token refresh failed:", refreshError.message);
         }
 
         await SecureStore.deleteItemAsync("auth_token");
         await SecureStore.deleteItemAsync("user_data");
 
+        // We can't easily access the store here without circular dependencies,
+        // but clearing SecureStore will make the next checkAuth fail gracefully.
         return Promise.reject(refreshError);
       }
     }
